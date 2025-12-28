@@ -6,6 +6,7 @@ import { useDropzone } from "react-dropzone"
 import { parseCSV, type LinkedInConnection } from "@/lib/csv-parser"
 import { matchConnections, type MatchedConnection } from "@/lib/match-connections"
 import { ConnectionCard } from "@/components/connection-card"
+import { MessageModal } from "@/components/message-modal"
 
 export default function Home() {
   const [resolution, setResolution] = useState("")
@@ -14,6 +15,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [connections, setConnections] = useState<LinkedInConnection[] | null>(null)
   const [keywords, setKeywords] = useState<string[] | null>(null)
+  const [selectedConnection, setSelectedConnection] = useState<MatchedConnection | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Compute matched connections when we have both connections and keywords
   const matchedConnections = useMemo(() => {
@@ -83,9 +86,13 @@ export default function Home() {
   }
 
   const handleConnect = (connection: MatchedConnection) => {
-    // Phase 4 will implement message generation
-    console.log("Connect clicked for:", connection)
-    // For now, just log - Phase 4 will add the modal
+    setSelectedConnection(connection)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedConnection(null)
   }
 
   const handleReset = () => {
@@ -213,13 +220,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-950/50 border border-red-800 rounded-xl text-red-200">
-              <p className="font-medium">Error: {error}</p>
-            </div>
-          )}
-
           {/* Results Section */}
           {showResults && (
             <div className="space-y-6">
@@ -274,6 +274,14 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Message Modal */}
+      <MessageModal
+        connection={selectedConnection}
+        resolution={resolution}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </main>
   )
 }
