@@ -1,14 +1,16 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { Upload, Target, Sparkles, Loader2, Users } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { Upload, Target, Sparkles, Loader2, Users, LogOut, User, Database, RefreshCw } from "lucide-react"
 import { useDropzone } from "react-dropzone"
+import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs"
 import { parseCSV, type LinkedInConnection } from "@/lib/csv-parser"
 import { matchConnections, type MatchedConnection } from "@/lib/match-connections"
 import { ConnectionCard } from "@/components/connection-card"
 import { MessageModal } from "@/components/message-modal"
 
 export default function Home() {
+  const { isSignedIn, user } = useUser()
   const [resolution, setResolution] = useState("")
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -17,6 +19,17 @@ export default function Home() {
   const [keywords, setKeywords] = useState<string[] | null>(null)
   const [selectedConnection, setSelectedConnection] = useState<MatchedConnection | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [savedConnections, setSavedConnections] = useState<LinkedInConnection[] | null>(null)
+  const [usingSavedConnections, setUsingSavedConnections] = useState(false)
+  const [loadingSaved, setLoadingSaved] = useState(false)
+
+  // Load saved connections when user signs in
+  useEffect(() => {
+    if (isSignedIn && !savedConnections && !loadingSaved) {
+      loadSavedConnections()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn])
 
   // Compute matched connections when we have both connections and keywords
   const matchedConnections = useMemo(() => {
@@ -25,6 +38,51 @@ export default function Home() {
     }
     return matchConnections(connections, keywords)
   }, [connections, keywords])
+
+  const loadSavedConnections = async () => {
+    if (!isSignedIn) return
+
+    setLoadingSaved(true)
+    try {
+      const response = await fetch("/api/load-connections")
+      if (response.ok) {
+        const data = await response.json()
+        if (data.connections) {
+          setSavedConnections(data.connections)
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load saved connections:", err)
+    } finally {
+      setLoadingSaved(false)
+    }
+  }
+
+  const handleLoadSavedConnections = () => {
+    if (savedConnections) {
+      setConnections(savedConnections)
+      setUsingSavedConnections(true)
+      setFile(null) // Clear file since we're using saved
+    }
+  }
+
+  const saveConnections = async (connectionsToSave: LinkedInConnection[]) => {
+    if (!isSignedIn) return
+
+    try {
+      await fetch("/api/save-connections", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ connections: connectionsToSave }),
+      })
+      // Update saved connections state
+      setSavedConnections(connectionsToSave)
+    } catch (err) {
+      console.error("Failed to save connections:", err)
+    }
+  }
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -35,6 +93,7 @@ export default function Home() {
         setKeywords(null)
       }
       setFile(newFile)
+      setUsingSavedConnections(false) // Switch to new file mode
     }
   }
 
@@ -58,6 +117,10 @@ export default function Home() {
       if (!parsedConnections) {
         parsedConnections = await parseCSV(file)
         setConnections(parsedConnections)
+        // Auto-save connections if user is signed in
+        if (isSignedIn && !usingSavedConnections) {
+          await saveConnections(parsedConnections)
+        }
       }
 
       // Step 2: Call API to analyze resolution and get keywords
@@ -108,6 +171,39 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+      {/* Auth Header */}
+      <div className="container mx-auto px-4 pt-6">
+        <div className="flex justify-end">
+          {isSignedIn ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-slate-300">
+                {user?.imageUrl && (
+                  <img
+                    src={user.imageUrl}
+                    alt={user.fullName || "User"}
+                    className="w-8 h-8 rounded-full"
+                  />
+                )}
+                <span className="text-sm">{user?.fullName || user?.emailAddresses[0]?.emailAddress}</span>
+              </div>
+              <SignOutButton>
+                <button className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-100 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors">
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </SignOutButton>
+            </div>
+          ) : (
+            <SignInButton mode="modal">
+              <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all">
+                <User className="w-4 h-4" />
+                <span>Sign In</span>
+              </button>
+            </SignInButton>
+          )}
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 py-16">
         <div className={`${showResults ? "max-w-7xl" : "max-w-4xl"} mx-auto`}>
           {/* Header */}
@@ -150,13 +246,42 @@ export default function Home() {
               />
             </div>
 
+            {/* Saved Connections Option */}
+            {isSignedIn && savedConnections && savedConnections.length > 0 && !usingSavedConnections && !file && (
+              <div className="mb-6 p-4 bg-purple-950/20 border border-purple-800/50 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Database className="w-5 h-5 text-purple-400" />
+                    <div>
+                      <p className="text-slate-200 font-medium">Saved Connections Available</p>
+                      <p className="text-xs text-slate-400">
+                        {savedConnections.length} connections from your last upload
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleLoadSavedConnections}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600/50 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Load Saved</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* File Upload Zone */}
             <div className="mb-6">
               <label className="flex items-center gap-2 text-slate-300 mb-3 text-lg font-medium">
                 <Upload className="w-5 h-5 text-purple-400" />
                 LinkedIn Connections
                 {hasConnections && (
-                  <span className="ml-2 text-xs text-green-400 font-normal">(Loaded: {connections?.length} connections)</span>
+                  <span className="ml-2 text-xs text-green-400 font-normal">
+                    (Loaded: {connections?.length} connections
+                    {usingSavedConnections && " - from saved"}
+                    {!usingSavedConnections && file && " - from new upload"}
+                    )
+                  </span>
                 )}
               </label>
               <div
@@ -197,7 +322,7 @@ export default function Home() {
             {/* Action Button */}
             <button
               onClick={handleFindConnections}
-              disabled={!resolution.trim() || !file || loading}
+              disabled={!resolution.trim() || (!file && !usingSavedConnections) || loading}
               className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
             >
               {loading ? (
