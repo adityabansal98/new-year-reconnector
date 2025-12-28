@@ -191,6 +191,7 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-slate-300">
                 {user?.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.imageUrl}
                     alt={user.fullName || "User"}
@@ -228,7 +229,7 @@ export default function Home() {
               </h1>
             </div>
             <p className="text-slate-400 text-lg mt-4">
-              Achieve your professional New Year's Resolutions by reconnecting with your network
+              Achieve your professional New Year&apos;s Resolutions by reconnecting with your network
             </p>
           </div>
 

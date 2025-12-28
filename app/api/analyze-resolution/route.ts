@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
             keywords = JSON.parse(jsonText)
         } catch (parseError) {
             // If parsing fails, try to extract array from the text
-            const arrayMatch = jsonText.match(/\[.*\]/s)
+            const arrayMatch = jsonText.match(/\[[\s\S]*\]/)
             if (arrayMatch) {
                 keywords = JSON.parse(arrayMatch[0])
             } else {
