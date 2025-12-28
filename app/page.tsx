@@ -25,7 +25,13 @@ export default function Home() {
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      setFile(acceptedFiles[0])
+      const newFile = acceptedFiles[0]
+      // If a different file is uploaded, clear existing connections to force re-parsing
+      if (file && (file.name !== newFile.name || file.size !== newFile.size || file.lastModified !== newFile.lastModified)) {
+        setConnections(null)
+        setKeywords(null)
+      }
+      setFile(newFile)
     }
   }
 
@@ -44,9 +50,12 @@ export default function Home() {
     setError(null)
 
     try {
-      // Step 1: Parse CSV
-      const parsedConnections = await parseCSV(file)
-      setConnections(parsedConnections)
+      // Step 1: Parse CSV (only if we don't have connections yet or file changed)
+      let parsedConnections = connections
+      if (!parsedConnections) {
+        parsedConnections = await parseCSV(file)
+        setConnections(parsedConnections)
+      }
 
       // Step 2: Call API to analyze resolution and get keywords
       const response = await fetch("/api/analyze-resolution", {
@@ -66,7 +75,7 @@ export default function Home() {
       setKeywords(data.keywords)
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
-      setConnections(null)
+      // Don't clear connections on error, just keywords
       setKeywords(null)
     } finally {
       setLoading(false)
@@ -88,6 +97,7 @@ export default function Home() {
   }
 
   const showResults = matchedConnections.length > 0
+  const hasConnections = connections !== null
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
@@ -106,63 +116,94 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Resolution Input */}
-          <div className="mb-8">
-            <label
-              htmlFor="resolution"
-              className="flex items-center gap-2 text-slate-300 mb-3 text-lg font-medium"
-            >
-              <Target className="w-5 h-5 text-purple-400" />
-              Your Resolution
-            </label>
-            <textarea
-              id="resolution"
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              placeholder="e.g., I want to pivot into Product Management in Climate Tech"
-              className="w-full min-h-[120px] px-6 py-4 bg-slate-900/50 border border-slate-800 rounded-xl text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-lg"
-            />
-          </div>
+          {/* Form Section - Always visible, but can be collapsed when results shown */}
+          <div className={`mb-8 ${showResults ? "bg-slate-900/30 border border-slate-800 rounded-xl p-6" : ""}`}>
+            {showResults && (
+              <div className="mb-4 pb-4 border-b border-slate-800">
+                <h2 className="text-lg font-semibold text-slate-200 mb-1">Adjust Your Search</h2>
+                <p className="text-sm text-slate-400">Modify your resolution to find different connections</p>
+              </div>
+            )}
 
-          {/* File Upload Zone */}
-          <div className="mb-8">
-            <label className="flex items-center gap-2 text-slate-300 mb-3 text-lg font-medium">
-              <Upload className="w-5 h-5 text-purple-400" />
-              LinkedIn Connections
-            </label>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${isDragActive
-                ? "border-purple-500 bg-purple-950/20"
-                : "border-slate-700 hover:border-slate-600 bg-slate-900/30"
-                }`}
-            >
-              <input {...getInputProps()} />
-              {file ? (
-                <div className="space-y-2">
-                  <Upload className="w-12 h-12 mx-auto text-purple-400" />
-                  <p className="text-slate-200 font-medium">{file.name}</p>
-                  <p className="text-sm text-slate-400">Click or drag to replace</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Upload className="w-12 h-12 mx-auto text-slate-500" />
-                  <div>
-                    <p className="text-slate-300 font-medium mb-1">
-                      {isDragActive
-                        ? "Drop your CSV file here"
-                        : "Drag & drop your Connections.csv file"}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      or click to browse
+            {/* Resolution Input */}
+            <div className="mb-6">
+              <label
+                htmlFor="resolution"
+                className="flex items-center gap-2 text-slate-300 mb-3 text-lg font-medium"
+              >
+                <Target className="w-5 h-5 text-purple-400" />
+                Your Resolution
+              </label>
+              <textarea
+                id="resolution"
+                value={resolution}
+                onChange={(e) => setResolution(e.target.value)}
+                placeholder="e.g., I want to pivot into Product Management in Climate Tech"
+                className="w-full min-h-[120px] px-6 py-4 bg-slate-900/50 border border-slate-800 rounded-xl text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-lg"
+              />
+            </div>
+
+            {/* File Upload Zone */}
+            <div className="mb-6">
+              <label className="flex items-center gap-2 text-slate-300 mb-3 text-lg font-medium">
+                <Upload className="w-5 h-5 text-purple-400" />
+                LinkedIn Connections
+                {hasConnections && (
+                  <span className="ml-2 text-xs text-green-400 font-normal">(Loaded: {connections?.length} connections)</span>
+                )}
+              </label>
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${isDragActive
+                  ? "border-purple-500 bg-purple-950/20"
+                  : "border-slate-700 hover:border-slate-600 bg-slate-900/30"
+                  }`}
+              >
+                <input {...getInputProps()} />
+                {file ? (
+                  <div className="space-y-2">
+                    <Upload className="w-12 h-12 mx-auto text-purple-400" />
+                    <p className="text-slate-200 font-medium">{file.name}</p>
+                    <p className="text-sm text-slate-400">Click or drag to replace</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <Upload className="w-12 h-12 mx-auto text-slate-500" />
+                    <div>
+                      <p className="text-slate-300 font-medium mb-1">
+                        {isDragActive
+                          ? "Drop your CSV file here"
+                          : "Drag & drop your Connections.csv file"}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        or click to browse
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-600 mt-4">
+                      Expected format: First Name, Last Name, Company, Position, Connected On
                     </p>
                   </div>
-                  <p className="text-xs text-slate-600 mt-4">
-                    Expected format: First Name, Last Name, Company, Position, Connected On
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
+
+            {/* Action Button */}
+            <button
+              onClick={handleFindConnections}
+              disabled={!resolution.trim() || !file || loading}
+              className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Analyzing...
+                </>
+              ) : showResults ? (
+                "Search Again"
+              ) : (
+                "Find Connections"
+              )}
+            </button>
           </div>
 
           {/* Error Message */}
@@ -172,8 +213,15 @@ export default function Home() {
             </div>
           )}
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-950/50 border border-red-800 rounded-xl text-red-200">
+              <p className="font-medium">Error: {error}</p>
+            </div>
+          )}
+
           {/* Results Section */}
-          {showResults ? (
+          {showResults && (
             <div className="space-y-6">
               {/* Results Header */}
               <div className="flex items-center justify-between">
@@ -185,6 +233,11 @@ export default function Home() {
                   <p className="text-slate-400">
                     Found {matchedConnections.length} relevant connections out of {connections?.length || 0} total
                   </p>
+                  {keywords && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Keywords: {keywords.join(", ")}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={handleReset}
@@ -205,37 +258,19 @@ export default function Home() {
                 ))}
               </div>
             </div>
-          ) : (
-            <>
-              {/* Success Message (when analysis complete but no matches) */}
-              {keywords && connections && !error && matchedConnections.length === 0 && (
-                <div className="mb-6 p-4 bg-yellow-950/50 border border-yellow-800 rounded-xl text-yellow-200">
-                  <p className="font-medium mb-2">Analysis Complete</p>
-                  <p className="text-sm text-yellow-300">
-                    No matches found. Try adjusting your resolution or check if your connections have relevant positions/companies.
-                  </p>
-                  <div className="mt-2 text-xs text-yellow-400">
-                    Keywords searched: {keywords.join(", ")}
-                  </div>
-                </div>
-              )}
+          )}
 
-              {/* Action Button */}
-              <button
-                onClick={handleFindConnections}
-                disabled={!resolution.trim() || !file || loading}
-                className="w-full py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  "Find Connections"
-                )}
-              </button>
-            </>
+          {/* No Matches Message */}
+          {keywords && connections && !error && !showResults && (
+            <div className="mb-6 p-4 bg-yellow-950/50 border border-yellow-800 rounded-xl text-yellow-200">
+              <p className="font-medium mb-2">Analysis Complete</p>
+              <p className="text-sm text-yellow-300">
+                No matches found. Try adjusting your resolution or check if your connections have relevant positions/companies.
+              </p>
+              <div className="mt-2 text-xs text-yellow-400">
+                Keywords searched: {keywords.join(", ")}
+              </div>
+            </div>
           )}
         </div>
       </div>
