@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Upload, Target, Sparkles, Loader2, Users, LogOut, User, Database, RefreshCw } from "lucide-react"
+import { Upload, Target, Sparkles, Loader2, Users, LogOut, User, Database, RefreshCw, FileText } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs"
+import Link from "next/link"
 import { parseCSV, type LinkedInConnection } from "@/lib/csv-parser"
 import { matchConnections, type MatchedConnection } from "@/lib/match-connections"
 import { ConnectionCard } from "@/components/connection-card"
@@ -281,6 +282,19 @@ export default function Home() {
                     <span>Load Saved</span>
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Help Link - Only show when no data uploaded */}
+            {!hasConnections && (
+              <div className="mb-4">
+                <Link
+                  href="/how-to-download"
+                  className="inline-flex items-center gap-2 text-sm text-purple-400 hover:text-purple-300 underline transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Need help downloading your LinkedIn connections?</span>
+                </Link>
               </div>
             )}
 
