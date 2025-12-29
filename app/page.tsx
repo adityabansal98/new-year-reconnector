@@ -10,7 +10,7 @@ import { matchConnections, type MatchedConnection } from "@/lib/match-connection
 import { ConnectionCard } from "@/components/connection-card"
 import { MessageModal } from "@/components/message-modal"
 import { trackFileUpload, trackButtonClick, trackSearch, trackPageView } from "@/lib/analytics"
-import { EXAMPLE_GOALS } from "@/lib/constants"
+import { useTypingAnimation } from "@/hooks/useTypingAnimation"
 
 export default function Home() {
   const { isSignedIn, user } = useUser()
@@ -28,11 +28,7 @@ export default function Home() {
   const [loadingSaved, setLoadingSaved] = useState(false)
 
   // Typing animation for example goals
-  const exampleGoals = EXAMPLE_GOALS
-  const [typingText, setTypingText] = useState("")
-  const [currentGoalIndex, setCurrentGoalIndex] = useState(0)
-  const [isTyping, setIsTyping] = useState(true)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const { typingText, stopTyping, resumeTyping } = useTypingAnimation(resolution)
 
   // Clear all connection data when user signs out
   useEffect(() => {
@@ -68,45 +64,6 @@ export default function Home() {
   useEffect(() => {
     trackPageView("/")
   }, [])
-
-  // Typing animation effect
-  useEffect(() => {
-    if (!isTyping || resolution.trim().length > 0) {
-      return // Stop animation if user is typing
-    }
-
-    const currentGoal = EXAMPLE_GOALS[currentGoalIndex]
-    let timeout: NodeJS.Timeout
-
-    if (isDeleting) {
-      // Delete characters
-      if (typingText.length > 0) {
-        timeout = setTimeout(() => {
-          setTypingText((prev) => prev.slice(0, -1))
-        }, 24)
-      } else {
-        // Move to next goal
-        setIsDeleting(false)
-        setCurrentGoalIndex((prev) => (prev + 1) % exampleGoals.length)
-      }
-    } else {
-      // Type characters
-      if (typingText.length < currentGoal.length) {
-        timeout = setTimeout(() => {
-          setTypingText((prev) => currentGoal.slice(0, prev.length + 1))
-        }, 40)
-      } else {
-        // Wait before deleting
-        timeout = setTimeout(() => {
-          setIsDeleting(true)
-        }, 800)
-      }
-    }
-
-    return () => {
-      if (timeout) clearTimeout(timeout)
-    }
-  }, [typingText, isTyping, isDeleting, currentGoalIndex, resolution, exampleGoals])
 
   // Compute matched connections when we have both connections and keywords
   const matchedConnections = useMemo(() => {
@@ -365,16 +322,13 @@ export default function Home() {
                   value={resolution}
                   onChange={(e) => {
                     setResolution(e.target.value)
-                    setIsTyping(false) // Stop animation when user types
+                    stopTyping() // Stop animation when user types
                   }}
-                  onFocus={() => setIsTyping(false)} // Stop animation on focus
+                  onFocus={() => stopTyping()} // Stop animation on focus
                   onBlur={() => {
                     // Resume animation if empty
                     if (resolution.trim().length === 0) {
-                      setIsTyping(true)
-                      setIsDeleting(false)
-                      setTypingText("")
-                      setCurrentGoalIndex(0)
+                      resumeTyping()
                     }
                   }}
                   placeholder=""
