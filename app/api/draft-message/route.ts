@@ -35,7 +35,21 @@ export async function POST(request: NextRequest) {
         const positionText = position || "their role"
         const companyText = company || "their company"
 
-        const systemPrompt = `Draft a casual LinkedIn message to ${name} at ${companyText} (${positionText}). Mention I am working on ${resolution} and would love their perspective. Keep it under 300 characters. No hashtags. Make it friendly, professional, and concise.`
+        const systemPrompt = `Draft a casual LinkedIn message to ${name} at ${companyText} (${positionText}). Mention I am working on ${resolution} and would love their perspective. Keep it under 300 characters. No hashtags. Make it friendly, professional, and concise.
+
+IMPORTANT FORMATTING: Use line breaks to format the message properly. For example:
+- After the greeting, add a line break
+- Between paragraphs, add line breaks
+- Keep sentences on separate lines where natural
+
+Example format:
+Hi [Name],
+
+Hope you're doing well! I wanted to reach out because...
+
+[rest of message]
+
+Format your response with proper line breaks.`
 
         const result = await model.generateContent(systemPrompt)
         const response = await result.response
