@@ -121,7 +121,7 @@ export default function Home() {
     }
   }
 
-  const handleFileChange = (newFile: File) => {
+  const handleFileChange = async (newFile: File) => {
     // If a different file is uploaded, clear existing connections to force re-parsing
     if (file && (file.name !== newFile.name || file.size !== newFile.size || file.lastModified !== newFile.lastModified)) {
       setConnections(null)
@@ -129,6 +129,18 @@ export default function Home() {
     }
     setFile(newFile)
     setUsingSavedConnections(false) // Switch to new file mode
+
+    // Auto-parse and save if user is signed in (so it appears on profile page)
+    if (isSignedIn) {
+      try {
+        const parsedConnections = await parseCSV(newFile)
+        setConnections(parsedConnections)
+        await saveConnections(parsedConnections)
+      } catch (err) {
+        // Silently fail - user will see error when they try to search
+        console.error("Failed to auto-save connections:", err)
+      }
+    }
   }
 
   const handleFindConnections = async () => {
