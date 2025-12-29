@@ -1,19 +1,19 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Upload, Sparkles, Loader2, Users, Database, RefreshCw, FileText } from "lucide-react"
+import { Upload, Sparkles, Loader2, Users, RefreshCw, FileText } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { useUser } from "@clerk/nextjs"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { GoalInput } from "@/components/goal-input"
+import { SavedConnectionsBanner } from "@/components/saved-connections-banner"
 import { parseCSV, type LinkedInConnection } from "@/lib/csv-parser"
 import { matchConnections, type MatchedConnection } from "@/lib/match-connections"
 import { ConnectionCard } from "@/components/connection-card"
 import { MessageModal } from "@/components/message-modal"
 import { trackFileUpload, trackButtonClick, trackSearch, trackPageView } from "@/lib/analytics"
 import { useTypingAnimation } from "@/hooks/useTypingAnimation"
-import { formatDate } from "@/lib/date-utils"
 
 export default function Home() {
   const { isSignedIn } = useUser()
@@ -277,31 +277,10 @@ export default function Home() {
 
             {/* Saved Connections Info - Show when user has saved connections */}
             {isSignedIn && !loadingSaved && savedConnections && savedConnections.length > 0 && usingSavedConnections && !file && (
-              <div className="mb-6 p-4 bg-purple-950/20 border border-purple-800/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Database className="w-5 h-5 text-purple-400 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-slate-200 font-medium mb-1">
-                      Using {savedConnections.length} saved connections
-                    </p>
-                    {savedConnectionsUpdatedAt && (
-                      <p className="text-xs text-slate-400 mb-2">
-                        Last updated: {formatDate(savedConnectionsUpdatedAt)}
-                      </p>
-                    )}
-                    <p className="text-sm text-slate-300">
-                      Want to update?{" "}
-                      <Link
-                        href="/profile"
-                        onClick={() => trackButtonClick("update_connections_link", "main_page")}
-                        className="text-purple-400 hover:text-purple-300 underline font-medium"
-                      >
-                        Go to Profile →
-                      </Link>
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <SavedConnectionsBanner
+                connectionsCount={savedConnections.length}
+                updatedAt={savedConnectionsUpdatedAt}
+              />
             )}
 
             {/* Help Link - Only show when no saved connections and no file uploaded and not loading */}
