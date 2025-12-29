@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Upload, Target, Sparkles, Loader2, Users, LogOut, User, Database, RefreshCw, FileText } from "lucide-react"
+import { Upload, Target, Sparkles, Loader2, Users, LogOut, User, Database, RefreshCw, FileText, Settings } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { useUser, SignInButton, SignOutButton } from "@clerk/nextjs"
 import Link from "next/link"
@@ -213,6 +213,14 @@ export default function Home() {
                 )}
                 <span className="text-sm">{user?.fullName || user?.emailAddresses[0]?.emailAddress}</span>
               </div>
+              <Link
+                href="/profile"
+                onClick={() => trackButtonClick("profile_link", "header")}
+                className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-100 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Profile</span>
+              </Link>
               <SignOutButton>
                 <button className="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-slate-100 border border-slate-700 rounded-lg hover:border-slate-600 transition-colors">
                   <LogOut className="w-4 h-4" />
