@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Sparkles, Loader2, Users, RefreshCw, FileText } from "lucide-react"
+import { Sparkles, Loader2, Users, FileText } from "lucide-react"
 import { useUser } from "@clerk/nextjs"
 import Link from "next/link"
 import { Header } from "@/components/header"
@@ -12,7 +12,7 @@ import { parseCSV, type LinkedInConnection } from "@/lib/csv-parser"
 import { matchConnections, type MatchedConnection } from "@/lib/match-connections"
 import { ConnectionCard } from "@/components/connection-card"
 import { MessageModal } from "@/components/message-modal"
-import { trackFileUpload, trackButtonClick, trackSearch, trackPageView } from "@/lib/analytics"
+import { trackButtonClick, trackSearch, trackPageView } from "@/lib/analytics"
 import { useTypingAnimation } from "@/hooks/useTypingAnimation"
 
 export default function Home() {
@@ -402,5 +402,4 @@ export default function Home() {
     </main>
   )
 }
-
 

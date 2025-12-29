@@ -70,4 +70,3 @@ export function useTypingAnimation(resolution: string) {
         resumeTyping,
     }
 }
-

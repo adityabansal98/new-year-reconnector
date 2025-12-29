@@ -18,6 +18,7 @@ import Link from "next/link"
 import { parseCSV, type LinkedInConnection } from "@/lib/csv-parser"
 import { trackPageView, trackButtonClick } from "@/lib/analytics"
 import { ConnectionsUpload } from "@/components/connections-upload"
+import { formatDate } from "@/lib/date-utils"
 
 export default function ProfilePage() {
   const { isSignedIn, user } = useUser()
@@ -140,21 +141,6 @@ export default function ProfilePage() {
     }
   }
 
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return "Never"
-    try {
-      const date = new Date(dateString)
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    } catch {
-      return dateString
-    }
-  }
 
   if (!isSignedIn) {
     return null // Will redirect
