@@ -10,6 +10,7 @@ import { matchConnections, type MatchedConnection } from "@/lib/match-connection
 import { ConnectionCard } from "@/components/connection-card"
 import { MessageModal } from "@/components/message-modal"
 import { trackFileUpload, trackButtonClick, trackSearch, trackPageView } from "@/lib/analytics"
+import { EXAMPLE_GOALS } from "@/lib/constants"
 
 export default function Home() {
   const { isSignedIn, user } = useUser()
@@ -25,14 +26,9 @@ export default function Home() {
   const [savedConnectionsUpdatedAt, setSavedConnectionsUpdatedAt] = useState<string | null>(null)
   const [usingSavedConnections, setUsingSavedConnections] = useState(false)
   const [loadingSaved, setLoadingSaved] = useState(false)
-  
+
   // Typing animation for example goals
-  const exampleGoals = [
-    "I want to pivot into Product Management in Climate Tech",
-    "I'm looking to connect with AI researchers and ML engineers",
-    "I need to find startup founders in the healthcare space",
-    "I want to network with VCs and investors in fintech",
-  ]
+  const exampleGoals = EXAMPLE_GOALS
   const [typingText, setTypingText] = useState("")
   const [currentGoalIndex, setCurrentGoalIndex] = useState(0)
   const [isTyping, setIsTyping] = useState(true)
@@ -79,7 +75,7 @@ export default function Home() {
       return // Stop animation if user is typing
     }
 
-    const currentGoal = exampleGoals[currentGoalIndex]
+    const currentGoal = EXAMPLE_GOALS[currentGoalIndex]
     let timeout: NodeJS.Timeout
 
     if (isDeleting) {
@@ -193,7 +189,7 @@ export default function Home() {
       setError("Please enter your goal")
       return
     }
-    
+
     if (!file && !connections) {
       setError("Please upload a CSV file or ensure your saved connections are loaded")
       return
