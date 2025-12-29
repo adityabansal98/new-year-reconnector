@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Upload, Target, Sparkles, Loader2, Users, Database, RefreshCw, FileText } from "lucide-react"
+import { Upload, Sparkles, Loader2, Users, Database, RefreshCw, FileText } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { useUser } from "@clerk/nextjs"
 import Link from "next/link"
 import { Header } from "@/components/header"
+import { GoalInput } from "@/components/goal-input"
 import { parseCSV, type LinkedInConnection } from "@/lib/csv-parser"
 import { matchConnections, type MatchedConnection } from "@/lib/match-connections"
 import { ConnectionCard } from "@/components/connection-card"
@@ -253,42 +254,13 @@ export default function Home() {
             )}
 
             {/* Goal Input */}
-            <div className="mb-6">
-              <label
-                htmlFor="resolution"
-                className="flex items-center gap-2 text-slate-300 mb-3 text-lg font-medium"
-              >
-                <Target className="w-5 h-5 text-purple-400" />
-                Your Goal
-              </label>
-              <div className="relative">
-                <textarea
-                  id="resolution"
-                  value={resolution}
-                  onChange={(e) => {
-                    setResolution(e.target.value)
-                    stopTyping() // Stop animation when user types
-                  }}
-                  onFocus={() => stopTyping()} // Stop animation on focus
-                  onBlur={() => {
-                    // Resume animation if empty
-                    if (resolution.trim().length === 0) {
-                      resumeTyping()
-                    }
-                  }}
-                  placeholder=""
-                  className="w-full min-h-[120px] px-6 py-4 bg-slate-900/50 border border-slate-800 rounded-xl text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-lg relative z-10"
-                />
-                {resolution.trim().length === 0 && typingText && (
-                  <div className="absolute inset-0 px-6 py-4 pointer-events-none z-0">
-                    <div className="text-slate-500 text-lg whitespace-pre-wrap">
-                      {typingText}
-                      <span className="animate-pulse">|</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <GoalInput
+              value={resolution}
+              onChange={setResolution}
+              typingText={typingText}
+              onStopTyping={stopTyping}
+              onResumeTyping={resumeTyping}
+            />
 
             {/* Loading State - Show while fetching saved connections */}
             {isSignedIn && loadingSaved && (
